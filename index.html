@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aesthetic Wallpaper Maker — Crafted by Abhi</title>
+<style>
+  :root{
+    --bg1:#0f172a; --bg2:#1e293b;
+    --card: rgba(255,255,255,0.04);
+    --accent1:#38bdf8; --accent2:#a78bfa;
+    --muted:#94a3b8; --text:#f8fafc;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:Inter, "Segoe UI", system-ui, Roboto, Arial;
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+  }
+
+  .app {
+    width:100%; max-width:1100px;
+    margin: 0 auto;
+  }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  .logo{
+    width:56px;height:56px;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent2),var(--accent1));
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;
+    box-shadow:0 10px 30px rgba(56,189,248,0.12);
+  }
+  h1{font-size:1.2rem;margin:0}
+  p.lead{margin:0;color:var(--muted);font-size:0.95rem}
+
+  .layout{ display:grid; grid-template-columns:1fr 420px; gap:20px; align-items:start; }
+  @media (max-width:980px){ .layout{ grid-template-columns:1fr; } }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius: var(--radius);
+    padding:18px;
+    box-shadow:0 18px 50px rgba(2,6,23,0.6);
+    border:1px solid rgba(255,255,255,0.04);
+    backdrop-filter: blur(6px) saturate(1.05);
+  }
+
+  /* left: canvas area */
+  .preview-wrap{ display:flex; flex-direction:column; gap:12px; align-items:center }
+  .canvas-stage{
+    width:100%;
+    max-width:820px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));
+    border-radius:12px;
+    padding:12px;
+    display:flex;
+    justify-content:center;
+  }
+  canvas#wall {
+    width:100%; max-width:800px; height:auto; border-radius:8px; display:block;
+    background: transparent; box-shadow: 0 20px 60px rgba(2,6,23,0.6);
+  }
+
+  .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:6px }
+  .btn {
+    background: linear-gradient(90deg,var(--accent1),var(--accent2));
+    color:#031025; padding:10px 14px; border-radius:12px; border:none; cursor:pointer; font-weight:700;
+    box-shadow:0 8px 30px rgba(56,189,248,0.12);
+  }
+  .btn.ghost { background:transparent;color:var(--text); border:1px solid rgba(255,255,255,0.06); box-shadow:none }
+  .btn:active{ transform:translateY(1px) }
+
+  /* right: controls */
+  .controls{ display:flex; flex-direction:column; gap:12px }
+  label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:6px }
+  input[type="text"], textarea, select {
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.02);
+    color:var(--text);
+    outline:none;
+    font-size:14px;
+    resize:vertical;
+  }
+  textarea{ min-height:94px; max-height:220px }
+  .row{ display:flex; gap:10px; }
+  .row .col{ flex:1 }
+
+  .palette {
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .swatch {
+    width:56px;height:36px;border-radius:8px;cursor:pointer;border:2px solid rgba(0,0,0,0.08);
+    box-shadow:0 6px 18px rgba(2,6,23,0.4);
+  }
+  .swatch.active{ outline:3px solid rgba(255,255,255,0.06); transform:translateY(-4px) }
+
+  .small { font-size:0.9rem; color:var(--muted) }
+
+  .option-group{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .pill { padding:8px 12px; border-radius:999px; background:rgba(255,255,255,0.02); color:var(--muted); cursor:pointer; border:1px solid rgba(255,255,255,0.02) }
+  .pill.active{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#001219; box-shadow:0 10px 30px rgba(56,189,248,0.08) }
+
+  .preset-row{ display:flex; gap:8px; align-items:center; margin-top:6px }
+  .link { color:var(--accent1); text-decoration:underline; cursor:pointer }
+
+  footer { margin-top:14px; color:var(--muted); text-align:center; font-size:0.88rem }
+
+  .hint{ font-size:0.86rem; color:var(--muted) }
+
+  /* subtle animations */
+  .fade-up { transform-origin:50% 90%; transition: transform .35s cubic-bezier(.2,.9,.3,1), opacity .35s; opacity:1; transform:translateY(0) }
+  .hidden { opacity:0; transform:translateY(8px) }
+
+  /* responsive small */
+  @media (max-width:520px){
+    .layout{ grid-template-columns:1fr; }
+    .logo{ width:44px;height:44px }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">AW</div>
+        <div>
+          <h1>Aesthetic Wallpaper Maker</h1>
+          <p class="lead">Create & download beautiful social wallpapers — Crafted with ❤️ by Abhi</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="downloadBtn" class="btn">Download PNG</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- left: preview -->
+      <section class="panel preview-wrap">
+        <div class="canvas-stage">
+          <!-- canvas size 1200 x 675 (16:9) for good social wallpaper resolution -->
+          <canvas id="wall" width="1200" height="675" aria-label="Wallpaper preview"></canvas>
+        </div>
+
+        <div class="toolbar">
+          <button id="randomizeBtn" class="btn ghost">Randomize</button>
+          <button id="presetOne" class="btn ghost">Preset • Soft Pink</button>
+          <button id="presetTwo" class="btn ghost">Preset • Midnight Blue</button>
+          <button id="clearText" class="btn ghost">Clear Text</button>
+        </div>
+
+        <div class="hint">Tip: write a short quote or caption (2–6 lines) — choose palette, shapes, and font style — then download.</div>
+      </section>
+
+      <!-- right: controls -->
+      <aside class="panel controls">
+        <div>
+          <label for="textInput">Wallpaper Text</label>
+          <textarea id="textInput" placeholder="Type your quote or caption here...">Crafted with ❤️ by Abhi</textarea>
+        </div>
+
+        <div>
+          <label>Font Style</label>
+          <div class="option-group">
+            <div class="pill active" data-font="Serif">Serif</div>
+            <div class="pill" data-font="Sans">Sans</div>
+            <div class="pill" data-font="Mono">Mono</div>
+            <div class="pill" data-font="Hand">Handwritten</div>
+          </div>
+        </div>
+
+        <div>
+          <label>Alignment</label>
+          <div class="option-group">
+            <div class="pill active" data-align="center">Center</div>
+            <div class="pill" data-align="left">Left</div>
+            <div class="pill" data-align="right">Right</div>
+          </div>
+        </div>
+
+        <div>
+          <label>Palette</label>
+          <div class="palette" id="palettes">
+            <!-- swatches filled by JS -->
+          </div>
+        </div>
+
+        <div>
+          <label>Decor Shapes</label>
+          <div class="option-group">
+            <div class="pill" data-shape="none">None</div>
+            <div class="pill active" data-shape="circles">Floating Circles</div>
+            <div class="pill" data-shape="lines">Soft Lines</div>
+            <div class="pill" data-shape="dots">Subtle Dots</div>
+          </div>
+        </div>
+
+        <div>
+          <label>Text Size</label>
+          <div class="row">
+            <input id="sizeRange" type="range" min="28" max="120" value="44" />
+            <div class="col" style="min-width:64px"><input id="sizeExact" type="text" value="44" /></div>
+          </div>
+        </div>
+
+        <div>
+          <label>Save / Load Presets</label>
+          <div class="preset-row">
+            <input id="presetName" type="text" placeholder="Preset name" />
+            <button id="savePreset" class="btn ghost">Save</button>
+            <select id="loadPreset" style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--text)">
+              <option value="">Load preset...</option>
+            </select>
+            <button id="removePreset" class="btn ghost">Delete</button>
+          </div>
+        </div>
+
+        <div>
+          <label>Export</label>
+          <div class="row">
+            <div class="col">
+              <button id="downloadBtn2" class="btn">Download PNG</button>
+            </div>
+            <div class="col">
+              <button id="shareText" class="btn ghost">Copy Text</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:6px">
+          <div class="small">Preview resolution: <strong>1200×675 (16:9)</strong></div>
+          <div class="small">Works offline — all client-side.</div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>© 2025 Crafted with ❤️ by Abhi</footer>
+  </div>
+
+<script>
+/* ========= Wallpaper Maker JS =========
+   - draws gradient, shapes, text on canvas
+   - presets + randomizer + download PNG
+   - lightweight, single-file, no external libs
+*/
+
+// Canvas & context
+const canvas = document.getElementById('wall');
+const ctx = canvas.getContext('2d', { alpha: true });
+
+// UI nodes
+const textInput = document.getElementById('textInput');
+const palettesEl = document.getElementById('palettes');
+const sizeRange = document.getElementById('sizeRange');
+const sizeExact = document.getElementById('sizeExact');
+const fontPills = document.querySelectorAll('[data-font]');
+const alignPills = document.querySelectorAll('[data-align]');
+const shapePills = document.querySelectorAll('[data-shape]');
+const randomizeBtn = document.getElementById('randomizeBtn');
+const presetOne = document.getElementById('presetOne');
+const presetTwo = document.getElementById('presetTwo');
+const clearText = document.getElementById('clearText');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadBtn2 = document.getElementById('downloadBtn2');
+const shareText = document.getElementById('shareText');
+const savePreset = document.getElementById('savePreset');
+const loadPreset = document.getElementById('loadPreset');
+const removePreset = document.getElementById('removePreset');
+const presetName = document.getElementById('presetName');
+
+// State
+let state = {
+  palette: { a:'#fbcfe8', b:'#fce7f3' },
+  fontStyle: 'Serif',
+  align: 'center',
+  shape: 'circles',
+  size: 44,
+  text: textInput.value
+};
+
+// Built-in palettes
+const PALETTES = [
+  { name:'Soft Pink', a:'#FDECF7', b:'#FBCFE8' },
+  { name:'Midnight Blue', a:'#0f172a', b:'#1e293b' },
+  { name:'Sunset', a:'#FF9A9E', b:'#FAD0C4' },
+  { name:'Aqua Glow', a:'#9BE7FF', b:'#C2E9FB' },
+  { name:'Lavender', a:'#E9D5FF', b:'#FBCFFF' },
+  { name:'Peach', a:'#FFDAB9', b:'#FFE4E1' },
+  { name:'Mint', a:'#DFFFE2', b:'#BFF7D0' },
+];
+
+// Fonts map - system fonts fallback
+const FONT_MAP = {
+  'Serif': 'Georgia, "Times New Roman", serif',
+  'Sans': 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  'Mono': 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace',
+  'Hand': '"Segoe Script", "Bradley Hand", "Brush Script MT", cursive'
+};
+
+// Initialize palettes UI
+function createPaletteSwatches() {
+  PALETTES.forEach((p, idx)=>{
+    const s = document.createElement('div');
+    s.className = 'swatch';
+    s.title = p.name;
+    s.style.background = `linear-gradient(135deg, ${p.a}, ${p.b})`;
+    s.dataset.index = idx;
+    s.addEventListener('click', ()=> {
+      selectPalette(idx);
+      draw();
+    });
+    palettesEl.appendChild(s);
+  });
+}
+createPaletteSwatches();
+
+// UI helpers
+function selectPalette(idx) {
+  const p = PALETTES[idx];
+  state.palette = { a: p.a, b: p.b };
+  document.querySelectorAll('.swatch').forEach((el,i)=> el.classList.toggle('active', i===idx));
+}
+selectPalette(0);
+
+// Font selection
+fontPills.forEach(p=>{
+  p.addEventListener('click', ()=>{
+    fontPills.forEach(xx=>xx.classList.remove('active'));
+    p.classList.add('active');
+    state.fontStyle = p.dataset.font;
+    draw();
+  });
+});
+
+// Alignment
+alignPills.forEach(p=>{
+  p.addEventListener('click', ()=>{
+    alignPills.forEach(xx=>xx.classList.remove('active'));
+    p.classList.add('active');
+    state.align = p.dataset.align;
+    draw();
+  });
+});
+
+// Shapes
+shapePills.forEach(p=>{
+  p.addEventListener('click', ()=>{
+    shapePills.forEach(xx=>xx.classList.remove('active'));
+    p.classList.add('active');
+    state.shape = p.dataset.shape;
+    draw();
+  });
+});
+
+// Text size sync
+sizeRange.addEventListener('input', ()=>{
+  sizeExact.value = sizeRange.value;
+  state.size = parseInt(sizeRange.value,10);
+  draw();
+});
+sizeExact.addEventListener('change', ()=>{
+  let v = parseInt(sizeExact.value,10);
+  if(isNaN(v) || v<20) v = 20;
+  if(v>140) v = 140;
+  sizeExact.value = v;
+  sizeRange.value = v;
+  state.size = v;
+  draw();
+});
+
+// Text input
+textInput.addEventListener('input', ()=>{
+  state.text = textInput.value;
+  draw();
+});
+
+// Preset buttons
+presetOne.addEventListener('click', ()=>{
+  selectPalette(0); state.fontStyle='Hand'; state.size=56; sizeRange.value=56; sizeExact.value=56; fontPills.forEach(x=>x.classList.toggle('active', x.dataset.font==='Hand')); draw();
+});
+presetTwo.addEventListener('click', ()=>{
+  selectPalette(1); state.fontStyle='Sans'; state.size=44; sizeRange.value=44; sizeExact.value=44; fontPills.forEach(x=>x.classList.toggle('active', x.dataset.font==='Sans')); draw();
+});
+clearText.addEventListener('click', ()=> { textInput.value=''; state.text=''; draw(); });
+
+// Randomize
+randomizeBtn.addEventListener('click', ()=> {
+  const r1 = PALETTES[Math.floor(Math.random()*PALETTES.length)];
+  state.palette = { a:r1.a, b:r1.b };
+  const fonts = Object.keys(FONT_MAP);
+  state.fontStyle = fonts[Math.floor(Math.random()*fonts.length)];
+  fontPills.forEach(x=>x.classList.toggle('active', x.dataset.font===state.fontStyle));
+  const shapes = ['circles','lines','dots','none'];
+  state.shape = shapes[Math.floor(Math.random()*shapes.length)];
+  shapePills.forEach(x=>x.classList.toggle('active', x.dataset.shape===state.shape));
+  state.size = Math.floor(32 + Math.random()*60);
+  sizeRange.value = state.size; sizeExact.value = state.size;
+  // pick a random short text from defaults if empty
+  if(!textInput.value.trim()){
+    const seeds = [
+      "Remember why you started.",
+      "Write bravely. Share softly.",
+      "Small steps become long roads.",
+      "Made with heart, shared with love.",
+      "Dream, design, deliver."
+    ];
+    textInput.value = seeds[Math.floor(Math.random()*seeds.length)];
+    state.text = textInput.value;
+  }
+  draw();
+});
+
+// Download PNG
+function downloadCanvasPNG(filename='wallpaper.png'){
+  // generate full-res dataURL from canvas
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+downloadBtn.addEventListener('click', ()=> downloadCanvasPNG());
+downloadBtn2.addEventListener('click', ()=> downloadCanvasPNG());
+
+// Copy text
+shareText.addEventListener('click', ()=>{
+  navigator.clipboard.writeText(state.text || '').then(()=> {
+    flashText('Copied!');
+  });
+});
+function flashText(msg){
+  const original = shareText.innerText;
+  shareText.innerText = msg;
+  setTimeout(()=> shareText.innerText = original, 900);
+}
+
+// Presets storage
+function loadPresetsToSelect(){
+  const raw = localStorage.getItem('aw_presets');
+  loadPreset.innerHTML = '<option value="">Load preset...</option>';
+  if(!raw) return;
+  const obj = JSON.parse(raw);
+  Object.keys(obj).forEach(k=>{
+    const opt = document.createElement('option'); opt.value = k; opt.innerText = k;
+    loadPreset.appendChild(opt);
+  });
+}
+loadPresetsToSelect();
+
+savePreset.addEventListener('click', ()=>{
+  const name = (presetName.value || '').trim();
+  if(!name) { alert('Give preset a name'); return; }
+  const raw = localStorage.getItem('aw_presets');
+  const obj = raw ? JSON.parse(raw) : {};
+  obj[name] = {
+    palette: state.palette,
+    fontStyle: state.fontStyle,
+    align: state.align,
+    shape: state.shape,
+    size: state.size,
+    text: state.text
+  };
+  localStorage.setItem('aw_presets', JSON.stringify(obj));
+  loadPresetsToSelect();
+  presetName.value = '';
+  flashText('Saved');
+});
+loadPreset.addEventListener('change', ()=>{
+  const key = loadPreset.value;
+  if(!key) return;
+  const raw = JSON.parse(localStorage.getItem('aw_presets') || '{}');
+  if(!raw[key]) return;
+  const p = raw[key];
+  state = {...state, ...p};
+  // update UI controls to reflect state
+  selectPalette(PALETTES.findIndex(x=>x.a===p.palette.a && x.b===p.palette.b) >= 0 ?
+                PALETTES.findIndex(x=>x.a===p.palette.a && x.b===p.palette.b) : 0);
+  fontPills.forEach(x=>x.classList.toggle('active', x.dataset.font===state.fontStyle));
+  alignPills.forEach(x=>x.classList.toggle('active', x.dataset.align===state.align));
+  shapePills.forEach(x=>x.classList.toggle('active', x.dataset.shape===state.shape));
+  sizeRange.value = state.size; sizeExact.value = state.size;
+  textInput.value = state.text;
+  draw();
+});
+removePreset.addEventListener('click', ()=>{
+  const key = loadPreset.value;
+  if(!key) { alert('Select a preset to delete'); return; }
+  const raw = JSON.parse(localStorage.getItem('aw_presets') || '{}');
+  delete raw[key];
+  localStorage.setItem('aw_presets', JSON.stringify(raw));
+  loadPresetsToSelect();
+  flashText('Deleted');
+});
+
+// Utility: draw gradient background
+function drawGradient(w, h, a, b){
+  const grad = ctx.createLinearGradient(0,0,w,h);
+  grad.addColorStop(0, a);
+  grad.addColorStop(1, b);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,w,h);
+}
+
+// Draw shapes decorations
+function drawShapes(w,h, palette, kind){
+  ctx.save();
+  ctx.globalAlpha = 0.14;
+  if(kind === 'circles'){
+    for(let i=0;i<10;i++){
+      const rad = 30 + Math.random()*160;
+      const x = Math.random()*w;
+      const y = Math.random()*h;
+      const grad = ctx.createRadialGradient(x,y,0,x,y,rad);
+      grad.addColorStop(0, palette.a);
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x,y,rad,0,Math.PI*2);
+      ctx.fill();
+    }
+  } else if(kind === 'lines'){
+    for(let i=0;i<6;i++){
+      ctx.beginPath();
+      ctx.moveTo(-50, (i+1)*(h/7) + Math.random()*40 -20);
+      ctx.bezierCurveTo(w/3, Math.random()*h, 2*w/3, Math.random()*h, w+50, (i+1)*(h/7) + Math.random()*40 -20);
+      ctx.lineWidth = 24;
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.stroke();
+    }
+  } else if(kind === 'dots'){
+    for(let x=40;x<w;x+=60){
+      for(let y=40;y<h;y+=60){
+        ctx.beginPath();
+        ctx.arc(x+Math.sin(x*y)*.1, y+Math.cos(x+y)*.1, 3, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+// Text drawing with wrapping and alignment
+function drawTextBlock(text, w, h, fontFamily, size, align){
+  ctx.save();
+  const padding = 80;
+  const maxWidth = w - padding*2;
+  ctx.fillStyle = '#fff';
+  ctx.globalAlpha = 0.98;
+  ctx.font = `700 ${size}px ${fontFamily}`;
+  ctx.textBaseline = 'middle';
+
+  // split into lines that fit maxWidth
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = '';
+  for(let i=0;i<words.length;i++){
+    const test = line ? (line + ' ' + words[i]) : words[i];
+    const metrics = ctx.measureText(test);
+    if(metrics.width > maxWidth && line){
+      lines.push(line);
+      line = words[i];
+    } else {
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+
+  // position block
+  const blockHeight = lines.length * (size * 1.05);
+  let startY = h/2 - blockHeight/2;
+  let x;
+  if(align === 'left') x = padding;
+  else if(align === 'right') x = w - padding;
+  else x = w/2;
+
+  ctx.fillStyle = '#fff';
+  ctx.globalAlpha = 0.96;
+  lines.forEach((ln, idx)=>{
+    const y = startY + idx * (size * 1.05) + size/2;
+    if(align === 'left'){
+      ctx.textAlign = 'left';
+      ctx.fillText(ln, x, y);
+    } else if(align === 'right'){
+      ctx.textAlign = 'right';
+      ctx.fillText(ln, x, y);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.fillText(ln, x, y);
+    }
+  });
+
+  ctx.restore();
+}
+
+// small subtle watermark
+function drawWatermark(w,h){
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.font = `600 18px ${FONT_MAP['Sans']}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Crafted with ❤️ by Abhi', w - 20, h - 22);
+  ctx.restore();
+}
+
+// main draw
+function draw(){
+  const w = canvas.width;
+  const h = canvas.height;
+  // clear
+  ctx.clearRect(0,0,w,h);
+  // gradient
+  drawGradient(w,h, state.palette.a, state.palette.b);
+  // shapes
+  if(state.shape && state.shape !== 'none'){
+    drawShapes(w,h, state.palette, state.shape);
+  }
+  // overlay subtle vignette
+  const vg = ctx.createLinearGradient(0,0,0,h);
+  vg.addColorStop(0,'rgba(0,0,0,0.03)');
+  vg.addColorStop(0.5,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,0.12)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0,0,w,h);
+
+  // decide font family
+  const ff = FONT_MAP[state.fontStyle] || FONT_MAP['Sans'];
+  // draw text
+  ctx.globalCompositeOperation = 'source-over';
+  drawTextBlock(state.text || '', w, h, ff, state.size, state.align);
+
+  // watercolor overlay - subtle
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,w,h);
+
+  // watermark
+  drawWatermark(w,h);
+}
+
+// helper: set initial sizes and state
+function initState(){
+  state.text = textInput.value;
+  state.size = parseInt(sizeRange.value,10) || 44;
+  // set pills initial
+  fontPills.forEach(x=> x.classList.toggle('active', x.dataset.font === state.fontStyle));
+  alignPills.forEach(x=> x.classList.toggle('active', x.dataset.align === state.align));
+  shapePills.forEach(x=> x.classList.toggle('active', x.dataset.shape === state.shape));
+  sizeExact.value = state.size;
+  // mark palette
+  const idx = PALETTES.findIndex(p=> p.a === state.palette.a && p.b === state.palette.b);
+  if(idx>=0) document.querySelectorAll('.swatch')[idx].classList.add('active');
+  draw();
+}
+initState();
+
+// utility: flash text on button
+function flashButton(btn, txt){
+  const original = btn.innerText;
+  btn.innerText = txt;
+  setTimeout(()=> btn.innerText = original, 900);
+}
+
+// Clipboard copy: download text
+function copyTextToClipboard(){
+  const text = state.text || '';
+  navigator.clipboard.writeText(text).then(()=> {
+    flashButton(shareText,'Copied!');
+  }).catch(()=> alert('Copy failed'));
+}
+shareText.addEventListener('click', copyTextToClipboard);
+
+// window focus/resize - redraw scaled preview (canvas is fixed resolution, but styled responsive)
+window.addEventListener('resize', ()=> {
+  // nothing needed - canvas CSS scales automatically
+});
+
+// initial draw
+draw();
+
+// small helper: when direct download button on header pressed as well
+downloadBtn.addEventListener('click', ()=> downloadCanvasPNG());
+downloadBtn2.addEventListener('click', ()=> downloadCanvasPNG());
+
+// expose download util (already above)
+function downloadCanvasPNG(filename='aesthetic-wallpaper.png'){
+  // use toDataURL from canvas, produce download
+  const dataURL = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataURL; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+}
+
+// make sure UI updates when user types outside events too
+textInput.addEventListener('blur', ()=> { state.text = textInput.value; draw(); });
+
+// keyboard shortcut: Ctrl+S to download
+window.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){
+    e.preventDefault();
+    downloadCanvasPNG();
+  }
+});
+</script>
+</body>
+</html>
