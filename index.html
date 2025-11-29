@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bablu Art Studio — Signboards & Laser Cutting</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071022;            /* deep navy */
+    --panel:#0b1220;
+    --muted:rgba(255,255,255,0.78);
+    --accent:#153a6b;        /* navy accent from logo */
+    --accent-2:#2a6fb0;
+    --glass: rgba(255,255,255,0.03);
+    --success:#27ae60;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#020308);color:#fff;font-family:Inter,system-ui,Roboto,Arial;}
+  a{color:inherit;text-decoration:none}
+  header{position:fixed;left:0;right:0;top:0;height:76px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;z-index:50;background:linear-gradient(180deg, rgba(5,8,15,0.6), rgba(5,8,15,0.08));backdrop-filter: blur(6px);}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo-wrap{width:56px;height:56px;border-radius:12px;background:linear-gradient(180deg,#fff,#f7f7f7);display:flex;align-items:center;justify-content:center;padding:6px}
+  h1{margin:0;font-size:16px;font-weight:800}
+  .small{font-size:13px;color:var(--muted)}
+  nav{display:flex;gap:10px;align-items:center}
+  nav a{padding:8px 12px;border-radius:10px;font-weight:700;color:var(--muted)}
+  nav a.cta{background:var(--accent);color:#fff}
+
+  main{padding-top:92px;max-width:1200px;margin:0 auto}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1fr 460px;gap:28px;padding:28px 20px 40px}
+@media(max-width:980px){ .hero{grid-template-columns:1fr;padding:20px;gap:18px} }
+.hero-left{display:flex;flex-direction:column;gap:12px;justify-content:center}
+.kicker{font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.title{font-size:clamp(28px,5vw,44px);font-weight:900;line-height:1}
+.subtitle{color:var(--muted);max-width:56ch}
+
+/* Right hero card with canvas */
+.hero-card{position:relative;border-radius:16px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));box-shadow:0 14px 50px rgba(0,0,0,0.6);min-height:420px;display:flex;align-items:center;justify-content:center;padding:12px}
+.hero-canvas{width:100%;height:100%;display:block}
+
+/* controls */
+.controls{position:absolute;left:12px;top:12px;display:flex;gap:8px;z-index:20}
+.btn{background:var(--glass);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer;font-weight:800;font-size:13px}
+.btn.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border:none}
+.hero-meta{position:absolute;right:12px;bottom:12px;background:rgba(0,0,0,0.45);padding:10px;border-radius:10px;font-weight:700;z-index:12}
+
+/* products */
+.products{padding:8px 20px 48px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1200px;margin:0 auto}
+@media(max-width:980px){ .products{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:600px){ .products{grid-template-columns:1fr;padding:8px 12px} }
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.06));padding:12px;border-radius:12px;display:flex;gap:12px;align-items:center}
+.thumb{width:88px;height:88px;border-radius:10px;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center}
+.card h3{margin:0;font-size:15px;color:#fff}
+.price{margin-left:auto;font-weight:900;color:var(--accent)}
+
+/* footer */
+footer{padding:28px 20px;border-top:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);max-width:1200px;margin:0 auto}
+
+.footer-links a{display:block;margin-bottom:6px;color:var(--muted);font-weight:700}
+
+/* modal */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:120;visibility:hidden;opacity:0;transition:all .12s}
+.modal.open{visibility:visible;opacity:1}
+.modal-card{background:linear-gradient(180deg,#071022,#05101a);padding:18px;border-radius:12px;min-width:320px;max-width:520px;color:#fff}
+input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff;margin-top:8px}
+
+/* order saved notice */
+.notice{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:linear-gradient(90deg,var(--success),#1bb25b);padding:10px 14px;border-radius:10px;font-weight:700;color:#02120a;box-shadow:0 8px 30px rgba(0,0,0,0.4);display:none;z-index:140}
+
+/* small helpers */
+.row{display:flex;gap:8px;align-items:center}
+.pill{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:999px;font-weight:700}
+.center{display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-wrap" aria-hidden="true">
+      <!-- Inline SVG logo (editable) -->
+      <!-- You can replace this <svg> with an uploaded SVG later or save it as assets/logo.svg -->
+      <svg id="svgLogo" viewBox="0 0 400 400" width="44" height="44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bablu Art Studio logo">
+        <!-- gear circle -->
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1">
+            <stop offset="0" stop-color="#153a6b"/>
+            <stop offset="1" stop-color="#2a6fb0"/>
+          </linearGradient>
+        </defs>
+        <circle cx="200" cy="200" r="190" fill="white"/>
+        <!-- outer gear stylized -->
+        <g transform="translate(0,0)" fill="none" stroke="#153a6b" stroke-width="18" stroke-linejoin="round">
+          <!-- 8 gear teeth as simple path stylization -->
+          <path d="M200 20 L220 60 L260 70 L300 40 L320 80 L300 120 L320 160 L300 200 L320 240 L300 280 L260 260 L220 290 L200 340 L180 290 L140 260 L100 280 L80 240 L100 200 L80 160 L100 120 L140 70 L180 60 Z" transform="translate(0,0) scale(.6) translate(100,60)" fill="#fff"/>
+        </g>
+        <!-- central badge -->
+        <g>
+          <circle cx="200" cy="200" r="110" fill="white"/>
+          <!-- laser icon -->
+          <g transform="translate(160,155) scale(.9)">
+            <rect x="34" y="6" width="20" height="60" rx="4" fill="#153a6b"/>
+            <rect x="26" y="62" width="44" height="10" rx="4" fill="#153a6b"/>
+            <path d="M42 78c6 6 20 18 20 18s-12 10-20 6c-8-4-20-16-20-16s12-12 20-8z" fill="#153a6b"/>
+          </g>
+          <!-- text -->
+          <text x="200" y="228" text-anchor="middle" font-family="Inter,Arial" font-weight="800" font-size="28" fill="#153a6b">BABLU ART STUDIO</text>
+          <text x="200" y="260" text-anchor="middle" font-family="Inter,Arial" font-weight="600" font-size="13" fill="#153a6b">LASER CUTTING • SINCE 1965</text>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <h1>Bablu Art Studio</h1>
+      <div class="small">Laser Cutting • Signboards • Since 1965</div>
+    </div>
+  </div>
+
+  <nav>
+    <a href="#products">Products</a>
+    <a href="https://instagram.com/bablu_art_studio" target="_blank" rel="noreferrer">Instagram</a>
+    <a class="cta" id="orderNow">Order Now</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-left">
+      <div class="kicker">Featured Work</div>
+      <h2 class="title">Eye-catching Signboards & Precision Laser Cutting</h2>
+      <p class="subtitle">Professional fabrication and installation. Showcase your best product with a fluid logo reveal that elevates your brand. Create story-ready captures instantly.</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="openGallery">Gallery</button>
+        <button class="btn" id="toggleWebcam">Use Webcam</button>
+        <button class="btn" id="captureShot">Capture</button>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="controls">
+        <button class="btn active" id="btnLogoMask">Logo Mask</button>
+        <button class="btn" id="btnBlobMask">Liquid Mask</button>
+      </div>
+
+      <!-- three.js canvas -->
+      <canvas id="heroCanvas" class="hero-canvas"></canvas>
+
+      <div class="hero-meta">
+        <div style="font-size:14px">Bablu Art Studio</div>
+        <div class="small">Call / WhatsApp: <strong>8507608757</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- product grid -->
+  <section id="products" class="products" aria-label="Products">
+    <div class="card">
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1602524813773-4b8b750dba9f?q=80&w=800&auto=format&fit=crop" style="width:100%;height:100%;object-fit:cover"></div>
+      <div>
+        <h3>Radium Signboard</h3>
+        <div class="small">Custom illuminated signboards in acrylic & metal.</div>
+      </div>
+      <div class="price">₹1,299</div>
+    </div>
+
+    <div class="card">
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1567016432779-4c9e0a8c2d6a?q=80&w=800&auto=format&fit=crop" style="width:100%;height:100%;object-fit:cover"></div>
+      <div>
+        <h3>Laser-cut Logo</h3>
+        <div class="small">Precision logo cutting for shop fronts & decor.</div>
+      </div>
+      <div class="price">₹899</div>
+    </div>
+
+    <div class="card">
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=800&auto=format&fit=crop" style="width:100%;height:100%;object-fit:cover"></div>
+      <div>
+        <h3>Custom Boards</h3>
+        <div class="small">Vinyl, acrylic, aluminum — tailored to need.</div>
+      </div>
+      <div class="price">₹499</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>
+    <div style="font-weight:900">Bablu Art Studio</div>
+    <div class="small">📍 Market Road, YourTown (replace with real address)</div>
+    <div class="small">📞 8507608757 • <a href="https://instagram.com/bablu_art_studio" target="_blank">@bablu_art_studio</a></div>
+  </div>
+  <div class="footer-links">
+    <a href="#products">Products</a>
+    <a id="exportOrders">Export Orders (CSV)</a>
+    <div class="small" style="margin-top:8px">Built for your client — replace images & copy before publishing.</div>
+  </div>
+</footer>
+
+<!-- order modal -->
+<div id="orderModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <h3 style="margin:0 0 6px 0">Place an Order</h3>
+    <div class="small">Fill details. Orders are saved locally and posted to a webhook if configured.</div>
+
+    <label class="small">Name</label>
+    <input id="customerName" placeholder="Full name">
+
+    <label class="small">Phone / WhatsApp</label>
+    <input id="customerPhone" placeholder="Phone">
+
+    <label class="small">Item / Note</label>
+    <textarea id="orderNote" placeholder="Size, material, delivery details..." style="min-height:84px"></textarea>
+
+    <label class="small">Preferred Delivery Date</label>
+    <input id="orderDate" type="date">
+
+    <div style="height:12px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="closeModal">Cancel</button>
+      <button class="btn active" id="sendOrder">Send Order</button>
+    </div>
+  </div>
+</div>
+
+<div class="notice" id="notice">Order saved</div>
+
+<!-- Three.js + Shader + Logo mask support -->
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.156.0/build/three.module.js';
+
+/* ==============
+   CONFIG
+   ============== */
+// If you have a server endpoint to receive orders, put it here (Netlify Function / Firebase Function / Google Apps Script webhook)
+const WEBHOOK_URL = ''; // e.g. 'https://your-domain.com/.netlify/functions/order'
+
+// Replace hero/product images with real files or URLs later
+const PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1602524813773-4b8b750dba9f?q=80&w=1600&auto=format&fit=crop';
+const BG_IMAGE = 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?q=80&w=1600&auto=format&fit=crop';
+
+/* ==============
+   THREE.JS SETUP
+   ============== */
+const canvas = document.getElementById('heroCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+function resizeRenderer(){
+  const w = canvas.clientWidth || 640;
+  const h = canvas.clientHeight || 420;
+  renderer.setSize(w, h);
+}
+resizeRenderer();
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const geometry = new THREE.PlaneGeometry(2,2);
+
+// textures
+const loader = new THREE.TextureLoader();
+const productTex = loader.load(PRODUCT_IMAGE, t => { t.minFilter = t.magFilter = THREE.LinearFilter; resizeRenderer();});
+const bgTex = loader.load(BG_IMAGE, t => { t.minFilter = t.magFilter = THREE.LinearFilter; });
+let video = document.createElement('video');
+let videoTexture = new THREE.VideoTexture(video);
+videoTexture.minFilter = THREE.LinearFilter; videoTexture.magFilter = THREE.LinearFilter;
+
+/* Optional: create a logo alpha mask from inline SVG.
+   We'll render the inline SVG to a canvas and use the alpha as a mask texture so the shader can reveal inside the logo shape.
+*/
+function svgToMaskTexture(svgElement, size = 1024){
+  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  return new Promise((resolve) => {
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      // white background for alpha extraction
+      ctx.clearRect(0,0,size,size);
+      // draw centered scaled
+      const ratio = Math.min(size / img.width, size / img.height);
+      const w = img.width * ratio; const h = img.height * ratio;
+      ctx.drawImage(img, (size - w)/2, (size - h)/2, w, h);
+      const tex = new THREE.CanvasTexture(c);
+      tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+      resolve(tex);
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => { resolve(null); };
+    img.src = url;
+  });
+}
+
+/* SHADERS
+   - This fragment shader supports two mask modes:
+     1) logoMaskTex (alpha from logo) — liquid effect constrained inside logo alpha
+     2) procedural FBM blob mask (liquid-looking)
+*/
+const vertexShader = `#version 300 es
+in vec3 position;
+out vec2 vUv;
+void main(){ vUv = position.xy * 0.5 + 0.5; gl_Position = vec4(position,1.0); }`;
+
+const fragmentShader = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 outColor;
+
+uniform sampler2D uMain;   // product image
+uniform sampler2D uBg;     // background
+uniform sampler2D uVideo;  // webcam
+uniform sampler2D uLogoMask; // logo alpha mask (rgba)
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uScale;
+uniform float uSpeed;
+uniform int uUseLogoMask; // 1 use logo alpha; 0 use procedural mask
+uniform int uMode; // 0 product reveal, 1 bg reveal, 2 webcam
+
+// hash / noise helpers
+float hash21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123); }
+float noise(vec2 p){
+  vec2 i = floor(p); vec2 f = fract(p);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0,0.0));
+  float c = hash21(i + vec2(0.0,1.0));
+  float d = hash21(i + vec2(1.0,1.0));
+  vec2 u = f*f*(3.0 - 2.0*f);
+  return mix(a,b,u.x) + (c - a)*u.y*(1.0 - u.x) + (d - b)*u.x*u.y;
+}
+float fbm(vec2 p){
+  float v=0.0; float a=0.5;
+  for(int i=0;i<5;i++){
+    v += a * noise(p);
+    p *= 1.8;
+    a *= 0.5;
+  }
+  return v;
+}
+
+void main(){
+  vec2 uv = vUv;
+  vec2 centered = uv - 0.5;
+  centered.x *= uRes.x / uRes.y;
+  vec2 p = centered * uScale;
+
+  float t = uTime * uSpeed;
+
+  // procedural liquid mask
+  float w = fbm(p + vec2(t*0.12, -t*0.08));
+  float w2 = fbm(p*1.4 + vec2(-t*0.09, t*0.11));
+  float procMask = smoothstep(0.18, 0.64, w*0.9 + w2*0.45);
+  float r = length(centered);
+  procMask *= smoothstep(0.9, 0.08, r * 1.1);
+  float pulse = 0.45 + 0.25 * sin(uTime * 1.3 + r * 6.0);
+  float finalProc = smoothstep(pulse - 0.12, pulse + 0.12, procMask);
+
+  // logo alpha mask sampling (alpha channel)
+  float logoAlpha = texture(uLogoMask, uv).a;
+
+  float mask = (uUseLogoMask == 1) ? logoAlpha * finalProc : finalProc;
+
+  // sample main visuals
+  vec3 mainCol = texture(uMain, uv).rgb;
+  vec3 bgCol = texture(uBg, uv).rgb;
+  vec3 vidCol = texture(uVideo, uv).rgb;
+
+  vec3 color;
+  if(uMode == 2){
+    color = mix(bgCol, vidCol, mask);
+  } else {
+    if(uMode == 1) color = mix(mainCol, bgCol, mask);
+    else color = mix(bgCol, mainCol, mask);
+  }
+
+  // glow along edges
+  float edge = length(vec2(dFdx(mask), dFdy(mask)));
+  color += vec3(1.0, 0.6, 0.2) * pow(edge, 0.7) * 0.18;
+
+  outColor = vec4(color, 1.0);
+}
+`;
+
+/* create material and mesh */
+const material = new THREE.ShaderMaterial({
+  vertexShader, fragmentShader,
+  uniforms: {
+    uMain: { value: productTex },
+    uBg: { value: bgTex },
+    uVideo: { value: videoTexture },
+    uLogoMask: { value: null }, // filled later after svg->texture
+    uRes: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    uTime: { value: 0 },
+    uScale: { value: 2.6 },
+    uSpeed: { value: 0.95 },
+    uUseLogoMask: { value: 1 },
+    uMode: { value: 0 }
+  }
+});
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+/* generate logo mask texture from inline svg logo */
+(async function(){
+  const svgEl = document.getElementById('svgLogo');
+  const maskTex = await svgToMaskTexture(svgEl, 1024);
+  if(maskTex){
+    material.uniforms.uLogoMask.value = maskTex;
+  } else {
+    // fallback: disable logo mask
+    material.uniforms.uUseLogoMask.value = 0;
+  }
+})();
+
+/* resize handling */
+function onResize(){
+  const w = canvas.clientWidth || 640;
+  const h = canvas.clientHeight || 420;
+  renderer.setSize(w, h);
+  material.uniforms.uRes.value.set(w, h);
+}
+window.addEventListener('resize', onResize, { passive:true });
+onResize();
+
+/* animation */
+let startTime = performance.now();
+function animate(){
+  requestAnimationFrame(animate);
+  const t = (performance.now() - startTime) * 0.001;
+  material.uniforms.uTime.value = t;
+  if(material.uniforms.uVideo.value && material.uniforms.uVideo.value.isVideoTexture){
+    material.uniforms.uVideo.value.needsUpdate = true;
+  }
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ==============
+   UI Controls
+   ============== */
+const btnLogoMask = document.getElementById('btnLogoMask');
+const btnBlobMask = document.getElementById('btnBlobMask');
+const toggleWebcamBtn = document.getElementById('toggleWebcam');
+const captureShotBtn = document.getElementById('captureShot');
+
+btnLogoMask.onclick = ()=>{
+  material.uniforms.uUseLogoMask.value = 1;
+  btnLogoMask.classList.add('active'); btnBlobMask.classList.remove('active');
+};
+btnBlobMask.onclick = ()=>{
+  material.uniforms.uUseLogoMask.value = 0;
+  btnBlobMask.classList.add('active'); btnLogoMask.classList.remove('active');
+};
+
+let webcamOn = false;
+toggleWebcamBtn.onclick = async ()=>{
+  if(!webcamOn){
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+      video.srcObject = stream; await video.play();
+      videoTexture = new THREE.VideoTexture(video);
+      videoTexture.minFilter = THREE.LinearFilter; videoTexture.magFilter = THREE.LinearFilter;
+      material.uniforms.uVideo.value = videoTexture;
+      material.uniforms.uMode.value = 2;
+      webcamOn = true;
+      toggleWebcamBtn.classList.add('active');
+    } catch(err){
+      alert('Cannot access camera. Use HTTPS or localhost and allow permission.');
+      console.error(err);
+    }
+  } else {
+    if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+    webcamOn = false;
+    material.uniforms.uMode.value = 0;
+    toggleWebcamBtn.classList.remove('active');
+  }
+};
+
+// capture current hero canvas as PNG
+captureShotBtn.onclick = ()=>{
+  renderer.render(scene, camera);
+  const data = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = data; a.download = 'bablu-hero.png';
+  a.click();
+};
+
+/* open gallery anchor */
+document.getElementById('openGallery').onclick = ()=> location.href = '#products';
+
+/* ==============
+   Order modal & saving
+   ============== */
+const orderModal = document.getElementById('orderModal');
+const orderNow = document.getElementById('orderNow');
+const closeModal = document.getElementById('closeModal');
+const sendOrder = document.getElementById('sendOrder');
+const notice = document.getElementById('notice');
+
+orderNow.onclick = ()=> { orderModal.classList.add('open'); orderModal.setAttribute('aria-hidden','false'); }
+document.getElementById('closeModal')?.addEventListener('click', ()=> { orderModal.classList.remove('open'); orderModal.setAttribute('aria-hidden','true'); });
+
+sendOrder.onclick = async ()=>{
+  const name = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+  const note = document.getElementById('orderNote').value.trim();
+  const date = document.getElementById('orderDate').value || '';
+  if(!name || !phone || !note){
+    alert('Please provide name, phone and order details.');
+    return;
+  }
+
+  const order = {
+    id: 'ORD' + Date.now(),
+    name, phone, note, date,
+    createdAt: new Date().toISOString()
+  };
+
+  // save to localStorage (keeps a local record you can export)
+  const existing = JSON.parse(localStorage.getItem('bablu_orders') || '[]');
+  existing.unshift(order);
+  localStorage.setItem('bablu_orders', JSON.stringify(existing));
+
+  // optional: post to configured webhook endpoint
+  if(WEBHOOK_URL){
+    try{
+      await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(order)
+      });
+    } catch(err){
+      console.warn('Webhook failed:', err);
+    }
+  }
+
+  // small success UI
+  orderModal.classList.remove('open'); orderModal.setAttribute('aria-hidden','true');
+  notice.textContent = 'Order saved — ready for processing';
+  notice.style.display = 'block';
+  setTimeout(()=> notice.style.display = 'none', 2800);
+
+  // clear form
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('orderNote').value = '';
+  document.getElementById('orderDate').value = '';
+};
+
+/* Export orders as CSV (quick grab to send to client) */
+document.getElementById('exportOrders').onclick = ()=>{
+  const arr = JSON.parse(localStorage.getItem('bablu_orders') || '[]');
+  if(!arr.length){ alert('No orders saved yet.'); return; }
+  const header = ['id','name','phone','note','date','createdAt'];
+  const rows = arr.map(o => [o.id,o.name,o.phone, (o.note||'').replace(/\n/g,' '), o.date, o.createdAt]);
+  const csv = [header.join(','), ...rows.map(r => r.map(c => `"${(c+'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'bablu_orders.csv'; a.click();
+  URL.revokeObjectURL(url);
+};
+
+/* quick initial state */
+document.getElementById('btnLogoMask').click();
+document.getElementById('btnLogoMask').classList.add('active');
+
+</script>
+
+</body>
+</html>
